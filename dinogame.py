@@ -20,19 +20,19 @@ def create_obstacle():
     obstacle = turtle.Turtle()
     obstacle.shape("square")
     obstacle.color("red")
+    obstacle.shapesize(2, 2, 1)
     obstacle.penup()
-    obstacle.goto(320, random.randint(-100, 0))
+    obstacle.goto(340, random.randint(-100, 0))
     obstacles.append(obstacle)
     
 # 장애물 관련 변수
 obstacle_speed = 10
 obstacles = []
-min_obstacle_distance = 20
-score = 0
+min_obstacle_distance = 35
 
 def schedule_next_turtle_creation():
     # 다음 터틀이 생성될 시간을 무작위로 결정
-    delay = random.randint(800, 4000) 
+    delay = random.randint(600, 2000) 
     # create_obstacle 함수를 호출하도록 예약
     wn.ontimer(create_obstacle, delay)
     # 다시 다음 생성 시간을 스케줄링
@@ -52,6 +52,19 @@ def jump():
     if not is_jumping: # 현재 점프 중이 아니라면
         is_jumping = True
         vertical_velocity = initial_jump_velocity # 점프 시작 시 초기 속도 설정
+
+# 점수 관련 설정
+score = 0
+score_pen = turtle.Turtle()
+score_pen.hideturtle()
+score_pen.penup()
+score_pen.goto(-200, 100)
+    
+def scoring():
+    score_text = f"Score = {score}"
+    score_pen.clear()
+    score_pen.write(score_text, align="center", font=("Arial", 12, "normal"))
+    wn.update()
 
 def check_collision(t1, t2, threshold):
     # 두 터틀 객체 t1과 t2 사이의 거리가 threshold보다 작으면 충돌
@@ -78,10 +91,11 @@ def animate_jump():
     wn.ontimer(animate_jump, 20) # 20ms마다 animate_jump 함수를 다시 호출
 
 def game_loop():
-    global score
+    global score, is_jumping, vertical_velocity
     for obstacle in list(obstacles): # 리스트 순회 중 삭제를 위해 copy() 사용
         obstacle.setx(obstacle.xcor() - obstacle_speed) # 왼쪽으로 이동
-        
+            
+        # 충돌 시 게임오버 문구 출력, 점프 애니메이션과 키보드 이벤트 중지
         if check_collision(player, obstacle, min_obstacle_distance):
             print("Game Over! score = {}".format(score))
             game_over_pen = turtle.Turtle()
@@ -89,22 +103,30 @@ def game_loop():
             game_over_pen.penup()
             game_over_pen.goto(0, 0)
             game_over_pen.write("GAME OVER!", align="center", font=("Arial", 30, "normal"))
+            is_jumping = False
+            vertical_velocity = 0
+            player.sety(player.ycor())
+            wn.onkey(None, "space")
             return # 게임 오버 시 루프 중단
-
+        
+        if obstacle.xcor() == -150:
+            score += 1
+            scoring()
+            
         if obstacle.xcor() < -340:
             obstacle.clear()
             obstacle.hideturtle()
             obstacles.remove(obstacle)
-            score += 1
+            
     wn.update()
     wn.ontimer(game_loop, 20)
     
-
 # 키보드 이벤트
 wn.listen()
 wn.onkey(jump, "space")
 
+scoring()
 animate_jump()
 schedule_next_turtle_creation()
 game_loop()
-wn.mainloop() # 윈도우를 열린 상태로 유지
+wn.mainloop()
